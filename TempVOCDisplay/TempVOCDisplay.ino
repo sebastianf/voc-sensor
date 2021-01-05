@@ -28,7 +28,8 @@ int soil = analogRead(A0);
 unsigned long previousMillis = 0;
 const long interval = 1000;
 float humidityThreshold = 60;
-uint16_t eco2Threshold, etvocThreshold;
+uint16_t eco2Threshold = 1000; // up to 1000 is ok over 2000 is bad, fresh air is needed
+uint16_t etvocThreshold = 400; // up to 400 is ok
 
 void setup() {
   // Enable serial
@@ -84,12 +85,6 @@ void loop() {
     return;
   }
   Serial.println("Reporting " + String((int)temperature) + "C and " + String((int)humidity) + " % humidity");
-
-  if (humidity > humidityThreshold) {
-    digitalWrite(D5,HIGH);
-  } else {
-    digitalWrite(D5,LOW);
-  }
 
   Serial.println();
         //clear display
@@ -147,8 +142,14 @@ void loop() {
     display.print( ccs811.errstat_str(errstat) );
   }
     
-    display.display();
+  display.display();
+
+  if (humidity > humidityThreshold || eco2 > eco2Threshold || etvoc > etvocThreshold) {
+    digitalWrite(D5,HIGH);
+  } else {
+    digitalWrite(D5,LOW);
+  }
 
   // Wait
-  delay(1000); 
+  delay(interval); 
 }
