@@ -22,7 +22,8 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Adafruit_CCS811 ccs;     // CCS811 is connected (I2C) to D1-->SLC-->GPIO5-->Pin5 & D2-->SDA-->GPIO4-->Pin4
 
-float temperature, humidity, eco2, tvoc;
+float temperature, humidity;
+uint16_t eco2, tvoc;
 int soil = analogRead(A0); 
 const long updateIntervallInSeconds = 10;
 unsigned long previousMillis = 0;
@@ -68,7 +69,7 @@ void setup() {
   pinMode(soil, INPUT);
 
   // Enable CCS811
-  ccs.begin();
+//  ccs.begin()
   delay(10);
   Serial.println("CCS811 test");
   if(!ccs.begin()){
@@ -101,8 +102,11 @@ void loop() {
       Serial.println("Failed to read from DHT sensor!");
       return;
     }
-    Serial.println("Reporting " + String((int)temperature) + "C and " + String((int)humidity) + " % humidity");
-  
+    Serial.println("Reporting " + String(temperature) + "C and " + String(humidity) + " % humidity");
+    
+    //calibrate temperature sensor
+    double ccsCalculatedTemp = ccs.calculateTemperature();
+    ccs.setTempOffset(ccsCalculatedTemp - temperature);  
     // Pass DHT22 temp & hum readings to CSS811 for compensation algorithm
     ccs.setEnvironmentalData(humidity, temperature);
   
@@ -113,7 +117,7 @@ void loop() {
         // Read CCS811 values
         eco2 = ccs.geteCO2();
         tvoc = ccs.getTVOC();
-        Serial.println("eco2= " + String((float)eco2) + "ppm tvoc=" + String((float)tvoc) + "ppb");
+        Serial.println("eco2= " + String((uint16_t)eco2) + "ppm tvoc=" + String((uint16_t)tvoc) + "ppb");
       }
     }
     
@@ -128,7 +132,7 @@ void loop() {
         displayTwoValues("Temperature", temperature, "C", "Humidity", humidity, "%");
         display.setTextSize(1);
         display.setCursor(0, 55);
-        display.print(eco2); display.print("ppm");
+        display.print(eco2); display.print("ppm ");
         display.print(tvoc); display.print("ppb");
         display.display();
       break;
