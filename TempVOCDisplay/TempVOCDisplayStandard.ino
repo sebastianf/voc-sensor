@@ -12,10 +12,6 @@
 #include <DHT.h>
 
 #define DHTTYPE   DHT22
-#define DHTPIN    D6
-#define LEDPIN    D5
-#define BUTTONPIN D8
-
 #define I2C_CCS811_ADDRESS 0x5A    // CCS811 I2C address
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -26,8 +22,6 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Adafruit_CCS811 ccs;                     // CCS811 is connected (I2C) to D1-->SLC-->GPIO5-->Pin5 & D2-->SDA-->GPIO4-->Pin4
 
-DHT dht(DHTPIN, DHTTYPE, 22);
-
 float temperature, humidity, eco2, tvoc;
 int soil = analogRead(A0);
 const long updateIntervallInSeconds = 10;
@@ -37,6 +31,11 @@ uint16_t eco2Threshold = 1500; // up to 1000 is ok over 2000 is bad, fresh air i
 uint16_t etvocThreshold = 400; // up to 400 is ok
 volatile int interruptCounter = 0;
 volatile bool buttonWasPressed = false;
+int DHTPIN = 12;
+int LEDPIN = 14;
+int BUTTONPIN = 13;
+
+DHT dht(DHTPIN, DHTTYPE, 22);
 
 void ICACHE_RAM_ATTR buttonPressed() {
   interruptCounter++;
@@ -49,7 +48,7 @@ void ICACHE_RAM_ATTR buttonPressed() {
 
 void setup() {
   pinMode(LEDPIN, OUTPUT);  //red led
-  pinMode(BUTTONPIN, INPUT);
+  pinMode(BUTTONPIN, INPUT_PULLUP);
 
   // Enable serial
   Serial.begin(115200);
