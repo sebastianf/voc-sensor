@@ -12,7 +12,9 @@
 #include <DHT.h>
 
 #define DHTTYPE   DHT22
-#define DHTPIN    12
+#define DHTPIN    D6
+#define LEDPIN    D5
+#define BUTTONPIN D8
 
 #define I2C_CCS811_ADDRESS 0x5A    // CCS811 I2C address
 
@@ -26,14 +28,29 @@ Adafruit_CCS811 ccs;                     // CCS811 is connected (I2C) to D1-->SL
 
 DHT dht(DHTPIN, DHTTYPE, 22);
 
-float temperature, humidity;
+float temperature, humidity, eco2, tvoc;
 int soil = analogRead(A0);
-const long UPDATE_INTERVAL_SECONDS = 2;
+const long updateIntervallInSeconds = 10;
+unsigned long previousMillis = 0;
 float humidityThreshold = 60;
 uint16_t eco2Threshold = 1500; // up to 1000 is ok over 2000 is bad, fresh air is needed
 uint16_t etvocThreshold = 400; // up to 400 is ok
+volatile int interruptCounter = 0;
+volatile bool buttonWasPressed = false;
+
+void ICACHE_RAM_ATTR buttonPressed() {
+  interruptCounter++;
+  buttonWasPressed = true;
+  if (interruptCounter > 3) {
+    interruptCounter = 0;
+  }
+    Serial.println("Button pressed. Show screen number: " + String((int)interruptCounter));
+}
 
 void setup() {
+  pinMode(LEDPIN, OUTPUT);  //red led
+  pinMode(BUTTONPIN, INPUT);
+
   // Enable serial
   Serial.begin(115200);
   
@@ -69,71 +86,97 @@ void setup() {
 
   // Clear the buffer
   display.clearDisplay();
-
-  pinMode(D5,OUTPUT);  //red led
+  attachInterrupt(digitalPinToInterrupt(BUTTONPIN), buttonPressed, RISING);
 }
 
-
 void loop() {
-  humidity = dht.readHumidity();
-  temperature = dht.readTemperature();
-                 
-  if (isnan(humidity) || isnan(temperature)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return;
-  }
-  Serial.println("Reporting " + String((int)temperature) + "C and " + String((int)humidity) + " % humidity");
-
-  //clear display
-  display.clearDisplay();
- 
-  // display temperature
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0,0);
-  display.print("Temperature: ");
-  display.setTextSize(2);
-  display.setCursor(0,10);
-  display.print(temperature);
-  display.print(" ");
-
-  display.print("C");
-  
-  // display humidity
-  display.setTextSize(1);
-  display.setCursor(0, 30);
-  display.print("Humidity: ");
-  display.setTextSize(2);
-  display.setCursor(0, 40);
-  display.print(humidity);
-  display.print(" %");
-  display.setTextSize(1);
-  display.setCursor(0, 55);
-
-
-  // Pass DHT22 temp & hum readings to CSS811 for compensation algorithm
-  ccs.setEnvironmentalData(humidity, temperature);
-
-  // Read CCS811
-  if(ccs.available()){
-    float temp = ccs.calculateTemperature();
-    if(ccs.readData()){
-      // Read CCS811 values
-      float eco2 = ccs.geteCO2();
-      float tvoc = ccs.getTVOC();
-      Serial.println("eco2= " + String((float)eco2) + "ppm tvoc=" + String((float)tvoc) + "ppb");
-      display.print(eco2); display.print("ppm ");
-      display.print(tvoc); display.print("ppb");
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= updateIntervallInSeconds * 1000 || buttonWasPressed) {
+    previousMillis = currentMillis;
+    buttonWasPressed = false;
+    
+    humidity = dht.readHumidity();
+    temperature = dht.readTemperature();
+                   
+    if (isnan(humidity) || isnan(temperature)) {
+      Serial.println("Failed to read from DHT sensor!");
+      return;
     }
-  }    
-  display.display();
-
-//  if (humidity > humidityThreshold || eco2 > eco2Threshold || etvoc > etvocThreshold) {
-//    digitalWrite(D5,HIGH);
-//  } else {
-//    digitalWrite(D5,LOW);
-//  }
-
-  // Wait
-  delay(UPDATE_INTERVAL_SECONDS * 1000); 
+    Serial.println("Reporting " + String((int)temperature) + "C and " + String((int)humidity) + " % humidity");
+  
+    // Pass DHT22 temp & hum readings to CSS811 for compensation algorithm
+    ccs.setEnvironmentalData(humidity, temperature);
+  
+    // Read CCS811
+    if(ccs.available()){
+      float temp = ccs.calculateTemperature();
+      if(ccs.readData()){
+        // Read CCS811 values
+        eco2 = ccs.geteCO2();
+        tvoc = ccs.getTVOC();
+        Serial.println("eco2= " + String((float)eco2) + "ppm tvoc=" + String((float)tvoc) + "ppb");
+      }
+    }
+    
+    display.clearDisplay();
+    switch(interruptCounter) {
+      case 0: 
+          // display temperature
+          display.setTextSize(1);
+          display.setTextColor(SSD1306_WHITE);
+          display.setCursor(0,0);
+          display.print("Temperature: ");
+          display.setTextSize(2);
+          display.setCursor(0,10);
+          display.print(temperature);
+          display.print(" ");
+          display.print("C");  
+      break;
+      case 1:
+          // display humidity
+          display.setTextSize(1);
+          display.setCursor(0, 30);
+          display.print("Humidity: ");
+          display.setTextSize(2);
+          display.setCursor(0, 40);
+          display.print(humidity);
+          display.print(" %");
+      break;
+      case 2:
+          // display temperature
+          display.setTextSize(1);
+          display.setTextColor(SSD1306_WHITE);
+          display.setCursor(0,0);
+          display.print("Temperature: ");
+          display.setTextSize(2);
+          display.setCursor(0,10);
+          display.print(temperature);
+          display.print(" ");
+          display.print("C");
+          
+          // display humidity
+          display.setTextSize(1);
+          display.setCursor(0, 30);
+          display.print("Humidity: ");
+          display.setTextSize(2);
+          display.setCursor(0, 40);
+          display.print(humidity);
+          display.print(" %");
+          display.setTextSize(1);
+          display.setCursor(0, 55);
+          display.print(eco2); display.print("ppm ");
+          display.print(tvoc); display.print("ppb");
+      break;
+      default:
+          display.clearDisplay();
+      break;
+    }
+    display.display();
+  
+  //  if (humidity > humidityThreshold || eco2 > eco2Threshold || etvoc > etvocThreshold) {
+  //    digitalWrite(LEDPIN,HIGH);
+  //  } else {
+  //    digitalWrite(LEDPIN,LOW);
+  //  }
+  } 
 }
