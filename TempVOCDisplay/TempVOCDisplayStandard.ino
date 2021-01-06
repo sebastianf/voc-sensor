@@ -20,10 +20,10 @@
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-Adafruit_CCS811 ccs;                     // CCS811 is connected (I2C) to D1-->SLC-->GPIO5-->Pin5 & D2-->SDA-->GPIO4-->Pin4
+Adafruit_CCS811 ccs;     // CCS811 is connected (I2C) to D1-->SLC-->GPIO5-->Pin5 & D2-->SDA-->GPIO4-->Pin4
 
 float temperature, humidity, eco2, tvoc;
-int soil = analogRead(A0);
+int soil = analogRead(A0); 
 const long updateIntervallInSeconds = 10;
 unsigned long previousMillis = 0;
 float humidityThreshold = 60;
@@ -32,12 +32,12 @@ uint16_t etvocThreshold = 400; // up to 400 is ok
 volatile int interruptCounter = 0;
 volatile bool buttonWasPressed = false;
 int DHTPIN = 12;
-int LEDPIN = 14;
+int REDLEDPIN = 14;
 int BUTTONPIN = 13;
 
 DHT dht(DHTPIN, DHTTYPE, 22);
 
-void ICACHE_RAM_ATTR buttonPressed() {
+void ICACHE_RAM_ATTR buttonPressed() { // ICACHE_RAM_ATTR was necessary otherwise it hasn't worked
   interruptCounter++;
   buttonWasPressed = true;
   if (interruptCounter > 3) {
@@ -47,7 +47,7 @@ void ICACHE_RAM_ATTR buttonPressed() {
 }
 
 void setup() {
-  pinMode(LEDPIN, OUTPUT);  //red led
+  pinMode(REDLEDPIN, OUTPUT);  
   pinMode(BUTTONPIN, INPUT_PULLUP);
 
   // Enable serial
@@ -68,7 +68,7 @@ void setup() {
   pinMode(soil, INPUT);
 
   // Enable CCS811
-  ccs.begin();                            // Enable CCS811
+  ccs.begin();
   delay(10);
   Serial.println("CCS811 test");
   if(!ccs.begin()){
@@ -139,9 +139,9 @@ void loop() {
     }
   
   //  if (humidity > humidityThreshold || eco2 > eco2Threshold || etvoc > etvocThreshold) {
-  //    digitalWrite(LEDPIN,HIGH);
+  //    digitalWrite(REDLEDPIN,HIGH);
   //  } else {
-  //    digitalWrite(LEDPIN,LOW);
+  //    digitalWrite(REDLEDPIN,LOW);
   //  }
   } 
 }
