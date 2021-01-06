@@ -117,60 +117,26 @@ void loop() {
       }
     }
     
-    display.clearDisplay();
     switch(interruptCounter) {
       case 0: 
-          // display temperature
-          display.setTextSize(1);
-          display.setTextColor(SSD1306_WHITE);
-          display.setCursor(0,0);
-          display.print("Temperature: ");
-          display.setTextSize(2);
-          display.setCursor(0,10);
-          display.print(temperature);
-          display.print(" ");
-          display.print("C");  
+        displayTwoValues("Temperature", temperature, "C", "Humidity", humidity, "%");  
       break;
       case 1:
-          // display humidity
-          display.setTextSize(1);
-          display.setCursor(0, 30);
-          display.print("Humidity: ");
-          display.setTextSize(2);
-          display.setCursor(0, 40);
-          display.print(humidity);
-          display.print(" %");
+        displayTwoValues("eco2 in ppm", eco2, "", "tvoc in ppb", tvoc, "");
       break;
       case 2:
-          // display temperature
-          display.setTextSize(1);
-          display.setTextColor(SSD1306_WHITE);
-          display.setCursor(0,0);
-          display.print("Temperature: ");
-          display.setTextSize(2);
-          display.setCursor(0,10);
-          display.print(temperature);
-          display.print(" ");
-          display.print("C");
-          
-          // display humidity
-          display.setTextSize(1);
-          display.setCursor(0, 30);
-          display.print("Humidity: ");
-          display.setTextSize(2);
-          display.setCursor(0, 40);
-          display.print(humidity);
-          display.print(" %");
-          display.setTextSize(1);
-          display.setCursor(0, 55);
-          display.print(eco2); display.print("ppm ");
-          display.print(tvoc); display.print("ppb");
+        displayTwoValues("Temperature", temperature, "C", "Humidity", humidity, "%");
+        display.setTextSize(1);
+        display.setCursor(0, 55);
+        display.print(eco2); display.print("ppm");
+        display.print(tvoc); display.print("ppb");
+        display.display();
       break;
       default:
-          display.clearDisplay();
+        display.clearDisplay();
+        display.display();
       break;
     }
-    display.display();
   
   //  if (humidity > humidityThreshold || eco2 > eco2Threshold || etvoc > etvocThreshold) {
   //    digitalWrite(LEDPIN,HIGH);
@@ -178,4 +144,25 @@ void loop() {
   //    digitalWrite(LEDPIN,LOW);
   //  }
   } 
+}
+
+void displayTwoValues(String descriptionTop, float valueTop, String unitTop, String descriptionBottom, float valueBottom, String unitBottom) {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0,0);
+  display.print(descriptionTop + ":");
+  display.setTextSize(2);
+  display.setCursor(0,10);
+  display.print(valueTop);
+  display.print(" " + unitTop);
+  
+  display.setTextSize(1);
+  display.setCursor(0, 30);
+  display.print(descriptionBottom + ":");
+  display.setTextSize(2);
+  display.setCursor(0, 40);
+  display.print(valueBottom);
+  display.print(" " + unitBottom);
+  display.display();
 }
